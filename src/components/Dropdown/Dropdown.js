@@ -1,27 +1,22 @@
 import React from "react";
 const Dropdown = () => {
   return (
-    <div className="dropdown">
-      <button
+    <div className="dropdown show">
+      <a
         className="btn btn-secondary dropdown-toggle"
-        type="button"
-        id="dropdownMenuButton"
+        href="#"
+        role="button"
+        id="dropdownMenuLink"
         data-toggle="dropdown"
         aria-haspopup="true"
         aria-expanded="false"
       >
-        Dropdown button
-      </button>
-      <div className="dropdown-menu" aria-labelledby="dropdownMenuButton">
-        <a className="dropdown-item" href="#">
-          Action
-        </a>
-        <a className="dropdown-item" href="#">
-          Another action
-        </a>
-        <a className="dropdown-item" href="#">
-          Something else here
-        </a>
+        Template
+      </a>
+
+      <div className="dropdown-menu" aria-labelledby="dropdownMenuLink">
+        <a className="dropdown-item">Template Flag</a>
+        <a className="dropdown-item">Another GOD</a>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import React from "react";
 import TableVertical from "./components/TableVertical/TableVertical";
-import Card from "./components/Card/Card.js";
+// import Card from "./components/Card/Card.js";
 import CustomPaginationTable from "./components/Table.js";
 
 function App() {
@@ -12,7 +12,8 @@ function App() {
           <TableVertical />
         </div>
       </div>
-      <Card />
+      {/* <Card /> */}
+
       <CustomPaginationTable />
     </div>
   );
