@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import BootstrapTable from "react-bootstrap-table-next";
+import { ExportToCsv } from "export-to-csv";
 import ToolkitProvider, {
   Search,
   CSVExport,
@@ -40,12 +41,28 @@ const pagination = paginationFactory({
 const Table = () => {
   const [rowsDelete, setRowsDelete] = useState([]);
   const [product, setProduct] = useState([
-    { id: 1, name: "Tadaluuu", age: 20 },
-    { id: 2, name: "Gnas", age: 29 },
-    { id: 3, name: "Pica Poca", age: 30 },
-    { id: 4, name: "Auspicious", age: 16 },
-    { id: 5, name: "Poli.lielove", age: 90 },
+    { id: 1, name: "Tadaluuu", age: 20, check: true },
+    { id: 2, name: "Gnas", age: 29, check: false },
+    { id: 3, name: "Pica Poca", age: 30, check: false },
+    { id: 4, name: "Auspicious", age: 16, check: false },
+    { id: 5, name: "Poli.lielove", age: 90, check: true },
   ]);
+  const txtTM = ["grandma", "Tada"];
+  const [checkTM, setCheckTM] = useState(false);
+  console.log();
+
+  const checkTextTM = () => {
+    for (let i = 0; i < txtTM.length; i++) {
+      if (product[0].name.search(txtTM[i]) >= 0) {
+        setCheckTM(true);
+        break;
+      } else setCheckTM(false);
+    }
+  };
+  useEffect(() => {
+    const b = checkTextTM();
+    return b;
+  });
   const columns = [
     {
       dataField: "id",
@@ -56,10 +73,16 @@ const Table = () => {
       dataField: "name",
       text: "Product Name",
       sort: true,
+      style: function (cell, row, rowIndex, colIndex) {
+        if (cell.search("Tadaluuu") >= 0) {
+          return " color: red";
+        }
+        console.log(cell, row);
+      },
     },
     {
-      dataField: "price",
-      text: "Product Price",
+      dataField: "age",
+      text: "Age",
       sort: true,
     },
     {
@@ -69,6 +92,11 @@ const Table = () => {
       formatter: (cell, row) => {
         return <img src={cell} alt="img" style={{ height: 50 }} />;
       },
+    },
+    {
+      dataField: "check",
+      text: "Check",
+      sort: true,
     },
   ];
   const defaultSorted = [
@@ -83,10 +111,8 @@ const Table = () => {
     clickToEdit: true,
     bgColor: "#fe7171",
     onSelect: (row, isSelect, rowIndex, e) => {
-      console.log(row.id);
-      console.log(isSelect);
-      console.log(rowIndex);
-      console.log(e);
+      console.log({ rowsDelete });
+      console.log("id : ", row.id);
       setRowsDelete((rowsDelete) => [...rowsDelete, row.id]);
     },
     //   onSelectAll: (isSelect, rows, e) => {
@@ -95,42 +121,47 @@ const Table = () => {
     //     console.log(e);
     //   },
   };
-  console.log({ rowsDelete });
+  // console.log({ rowsDelete });
 
   const deleteRow = () => {
-    console.log({ products });
-    console.log({ rowsDelete });
+    const productsCp = product.concat([]);
+    const newProducts = productsCp.filter(
+      (product) => !rowsDelete.includes(product.id)
+    );
+    return setProduct(newProducts);
   };
+  const check = true;
 
   return (
-    <ToolkitProvider
-      keyField="id"
-      data={product}
-      columns={columns}
-      search
-      exportCSV={{
-        fileName: "etsy.csv",
-      }}
-      bootstrap4
-      defaultSorted={defaultSorted}
-    >
-      {(props) => (
-        <div>
-          <button onClick={deleteRow}>Filter</button>
-          <ExportCSVButton {...props.csvProps}>Export CSV!!</ExportCSVButton>
-          <h3>Input something at below input field:</h3>
-          <SearchBar {...props.searchProps} placeholder="Search" />
-          <ClearSearchButton {...props.searchProps} />
-          <hr />
-          <BootstrapTable
-            {...props.baseProps}
-            pagination={pagination}
-            cellEdit={cellEditFactory({ mode: "dbclick" })}
-            selectRow={selectRow}
-          />
-        </div>
-      )}
-    </ToolkitProvider>
+    <div>
+      <ToolkitProvider
+        keyField="id"
+        data={product}
+        columns={columns}
+        search
+        exportCSV={{
+          fileName: "etsy.csv",
+        }}
+        bootstrap4
+        defaultSorted={defaultSorted}
+      >
+        {(props) => (
+          <div>
+            <button onClick={deleteRow}>Filter</button>
+            <h3>Input something at below input field:</h3>
+            <SearchBar {...props.searchProps} placeholder="Search" />
+            <ClearSearchButton {...props.searchProps} />
+            <hr />
+            <BootstrapTable
+              {...props.baseProps}
+              pagination={pagination}
+              cellEdit={cellEditFactory({ mode: "dbclick" })}
+              selectRow={selectRow}
+            />
+          </div>
+        )}
+      </ToolkitProvider>
+    </div>
   );
 };
 
