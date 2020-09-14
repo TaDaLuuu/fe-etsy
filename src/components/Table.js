@@ -1,31 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import BootstrapTable from "react-bootstrap-table-next";
 import { ExportToCsv } from "export-to-csv";
-import ToolkitProvider, {
-  Search,
-  CSVExport,
-} from "react-bootstrap-table2-toolkit";
+import ToolkitProvider, { Search } from "react-bootstrap-table2-toolkit";
 import paginationFactory from "react-bootstrap-table2-paginator";
 import cellEditFactory from "react-bootstrap-table2-editor";
+import filterFactory, { selectFilter } from "react-bootstrap-table2-filter";
 
 const { SearchBar, ClearSearchButton } = Search;
 const products = [];
-const { ExportCSVButton } = CSVExport;
-function addProducts(quantity) {
-  const startId = products.length;
-  for (let i = 0; i < quantity; i++) {
-    const id = startId + i;
-    products.push({
-      id: id,
-      name: "Item name " + id,
-      image:
-        "https://images.unsplash.com/photo-1599687265846-1ead869a1971?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-      price: 2100 + i,
-    });
-  }
-}
 
-addProducts(5);
 const pagination = paginationFactory({
   page: 1,
   sizePerPage: 20,
@@ -41,28 +24,100 @@ const pagination = paginationFactory({
 const Table = () => {
   const [rowsDelete, setRowsDelete] = useState([]);
   const [product, setProduct] = useState([
-    { id: 1, name: "Tadaluuu", age: 20, check: true },
-    { id: 2, name: "Gnas", age: 29, check: false },
-    { id: 3, name: "Pica Poca", age: 30, check: false },
-    { id: 4, name: "Auspicious", age: 16, check: false },
-    { id: 5, name: "Poli.lielove", age: 90, check: true },
+    {
+      id: 1,
+      name:
+        " Amalfi Coast Tee, Amalfi Coast Shirt, Positano, Amalfi, Scala, Praiano, Atrani, Ravello, Italian Summer, Italian Coast, Summer T-shirt",
+      numberOfSales: 20,
+      image:
+        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
+      check: true,
+    },
+    {
+      id: 2,
+      name:
+        "Vacation Mode T-Shirt, Vacay Shirt, Gift for Her, Vacay Mode Tee, Vacation Shirt, Funny Shirt, Graphic Tee, Summer Shirt, Nap Queen Shirt",
+      numberOfSales: 29,
+      image:
+        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
+      check: false,
+    },
+    {
+      id: 3,
+      name:
+        "Be Kind Shirt, Equality Shirt, Anti Racism T-Shirt, Feminist Shirt, Diversity Shirt, Unity, Human Rights Shirts, Kindness Shirt, Spread Love",
+      numberOfSales: 30,
+      image:
+        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
+      check: false,
+    },
+    {
+      id: 4,
+      name:
+        "Cactus Succulents Shirt, Vintage Drawing Tee, Plant Lady Gift, Plant Painting, Botanical Drawing Tee, Vintage Flower Drawing Aesthetic Shirt",
+      numberOfSales: 16,
+      image:
+        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
+      check: false,
+    },
+    {
+      id: 5,
+      name:
+        "Floral Daisy Face Mask, Neck Gaiter, Protective Face Mask, Face Shield, Bandana Face Mask, Reusable Washable Mask, Adult Kids Fashion Mask",
+      numberOfSales: 90,
+      image:
+        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
+      check: true,
+    },
   ]);
-  const txtTM = ["grandma", "Tada"];
-  const [checkTM, setCheckTM] = useState(false);
-  console.log();
 
-  const checkTextTM = () => {
-    for (let i = 0; i < txtTM.length; i++) {
-      if (product[0].name.search(txtTM[i]) >= 0) {
-        setCheckTM(true);
-        break;
-      } else setCheckTM(false);
-    }
+  const options = {
+    fieldSeparator: ",",
+    quoteStrings: '"',
+    decimalSeparator: ".",
+    showLabels: true,
+    showTitle: true,
+    title: "My Awesome CSV",
+    useTextFile: false,
+    useBom: true,
+    useKeysAsHeaders: true,
   };
-  useEffect(() => {
-    const b = checkTextTM();
-    return b;
+  const data1 = [];
+  const data2 = [];
+  product.map((e) => {
+    data1.push({
+      id: e.id,
+      name: e.name,
+      school: "",
+      numberOfSales: e.numberOfSales,
+      age: "",
+      image: e.image,
+      check: e.check,
+    });
   });
+  product.map((e) => {
+    data2.push({
+      id: e.id,
+      name: e.name,
+      school: "",
+      numberOfSales: e.numberOfSales,
+      age: "",
+      god: "",
+      image: e.image,
+      check: e.check,
+    });
+  });
+  const csvExporter = new ExportToCsv(options);
+  const exportCSV1 = () => {
+    csvExporter.generateCsv(data1);
+  };
+  const exportCSV2 = () => {
+    csvExporter.generateCsv(data2);
+  };
+  const qualityType = {
+    true: "true",
+    false: "false",
+  };
   const columns = [
     {
       dataField: "id",
@@ -73,16 +128,15 @@ const Table = () => {
       dataField: "name",
       text: "Product Name",
       sort: true,
-      style: function (cell, row, rowIndex, colIndex) {
-        if (cell.search("Tadaluuu") >= 0) {
-          return " color: red";
-        }
-        console.log(cell, row);
+      style: function (cell, row, rowIndex, cellIndex) {
+        if (row.check === false) {
+          return { color: "red" };
+        } else return "";
       },
     },
     {
-      dataField: "age",
-      text: "Age",
+      dataField: "numberOfSales",
+      text: "Number Of Sales",
       sort: true,
     },
     {
@@ -90,15 +144,17 @@ const Table = () => {
       text: "Image",
       sort: true,
       formatter: (cell, row) => {
-        return <img src={cell} alt="img" style={{ height: 50 }} />;
+        return <img src={cell} alt="img" style={{ height: 100 }} />;
       },
     },
     {
       dataField: "check",
       text: "Check",
       sort: true,
+      filter: selectFilter({ options: qualityType }),
     },
   ];
+
   const defaultSorted = [
     {
       dataField: "name",
@@ -111,9 +167,16 @@ const Table = () => {
     clickToEdit: true,
     bgColor: "#fe7171",
     onSelect: (row, isSelect, rowIndex, e) => {
-      console.log({ rowsDelete });
-      console.log("id : ", row.id);
-      setRowsDelete((rowsDelete) => [...rowsDelete, row.id]);
+      if (rowsDelete.find((e) => e === row.id) !== undefined) {
+        console.log("xxx");
+        const index = rowsDelete.indexOf(row.id);
+        rowsDelete.splice(index, 1);
+        setRowsDelete(rowsDelete);
+      } else
+        setRowsDelete((rowsDelete) => {
+          console.log({ rowsDelete });
+          return [...rowsDelete, row.id];
+        });
     },
     //   onSelectAll: (isSelect, rows, e) => {
     //     console.log(isSelect);
@@ -122,7 +185,6 @@ const Table = () => {
     //   },
   };
   // console.log({ rowsDelete });
-
   const deleteRow = () => {
     const productsCp = product.concat([]);
     const newProducts = productsCp.filter(
@@ -130,7 +192,6 @@ const Table = () => {
     );
     return setProduct(newProducts);
   };
-  const check = true;
 
   return (
     <div>
@@ -147,16 +208,37 @@ const Table = () => {
       >
         {(props) => (
           <div>
-            <button onClick={deleteRow}>Filter</button>
-            <h3>Input something at below input field:</h3>
-            <SearchBar {...props.searchProps} placeholder="Search" />
-            <ClearSearchButton {...props.searchProps} />
+            <button
+              type="button"
+              onClick={deleteRow}
+              class="btn btn-primary mb-4"
+            >
+              Filter
+            </button>
+            <h5 className="mb-3">Input something at below input field:</h5>
+            <div className="mb-3">
+              <SearchBar {...props.searchProps} placeholder="Search" />
+              <ClearSearchButton {...props.searchProps} />
+            </div>
+            <div className="row">
+              <div className="col-3">
+                <button onClick={exportCSV1} className="btn btn-info">
+                  Export CSV by Template 1
+                </button>
+              </div>
+              <div className="col-3">
+                <button onClick={exportCSV2} className="btn btn-info">
+                  Export CSV by Template 2
+                </button>
+              </div>
+            </div>
             <hr />
             <BootstrapTable
               {...props.baseProps}
               pagination={pagination}
               cellEdit={cellEditFactory({ mode: "dbclick" })}
               selectRow={selectRow}
+              filter={filterFactory()}
             />
           </div>
         )}
