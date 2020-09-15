@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import BootstrapTable from "react-bootstrap-table-next";
 import { ExportToCsv } from "export-to-csv";
 import ToolkitProvider, { Search } from "react-bootstrap-table2-toolkit";
 import paginationFactory from "react-bootstrap-table2-paginator";
 import cellEditFactory, { Type } from "react-bootstrap-table2-editor";
 import filterFactory, { selectFilter } from "react-bootstrap-table2-filter";
+import { Parser as HtmlToReactParser } from "html-to-react";
 
 const { SearchBar, ClearSearchButton } = Search;
 
@@ -54,8 +55,7 @@ const Table = () => {
   const [product, setProduct] = useState([
     {
       id: 1,
-      title:
-        " Amalfi Coast Tee, Amalfi Coast Shirt, Positano, Amalfi, Scala, Praiano, Atrani, Ravello, Italian Summer, Italian Coast, Summer T-shirt",
+      title: " Amalfi Coast Tee, Amalfi Coast Shirt",
       numberOfSales: 20,
       image: [
         "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
@@ -64,8 +64,7 @@ const Table = () => {
     },
     {
       id: 2,
-      title:
-        "Vacation Mode T-Shirt, Vacay Shirt, Gift for Her, Vacay Mode Tee, Vacation Shirt, Funny Shirt, Graphic Tee, Summer Shirt, Nap Queen Shirt",
+      title: "Vacation Mode T-Shirt, Vacay Shirt",
       numberOfSales: 29,
       image: [
         "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
@@ -74,8 +73,7 @@ const Table = () => {
     },
     {
       id: 3,
-      title:
-        "Be Kind Shirt, Equality Shirt, Anti Racism T-Shirt, Feminist Shirt, Diversity Shirt, Unity, Human Rights Shirts, Kindness Shirt, Spread Love",
+      title: "Be Kind Shirt, Equality Shirt",
       numberOfSales: 30,
       image: [
         "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
@@ -104,6 +102,31 @@ const Table = () => {
       check: true,
     },
   ]);
+
+  // const stringToHTML = (str) => {
+  //   const td = document.querySelectorAll("tbody tr .cell-product-name");
+  //   console.log({ td });
+  //   td.innerHTML = str;
+  //   return td;
+  // };
+
+  const txtTM = ["Tee", "Shirt"];
+  const transformedProducts = product.map((product) => {
+    let html = product.title;
+    txtTM.forEach((e) => {
+      if (html.length > 0) {
+        html = html.replaceAll(
+          e,
+          `<span style="background-color: yellow">${e}</span>`
+        );
+      }
+    });
+
+    return {
+      ...product,
+      title: html,
+    };
+  });
   const pagination = paginationFactory({
     page: 1,
     sizePerPage: 20,
@@ -116,7 +139,7 @@ const Table = () => {
     ],
   });
 
-  const info = product.concat([]);
+  const info = transformedProducts.concat([]);
   const infoEachProduct = infoProduct.concat([]);
   infoEachProduct.forEach((e, index) => {
     info[index].image = info[index].image.concat(e.imageProduct);
@@ -133,7 +156,7 @@ const Table = () => {
     useBom: true,
     useKeysAsHeaders: true,
   };
-  const txtTM = ["Tee", "Shirt"];
+
   const data1 = [];
   const data2 = [];
   product.map((e) =>
@@ -212,31 +235,10 @@ const Table = () => {
       text: "Product Name",
       sort: true,
       classes: "cell-product-name",
-      events: {
-        onClick: useEffect(() => {
-          txtTM.forEach((e) => {
-            const tbody = document.getElementsByTagName("tbody");
-            const listTrs = tbody[0].getElementsByTagName("tr");
-            let tdText;
-            for (let i = 0; i < listTrs.length; i++) {
-              tdText = listTrs[i].getElementsByTagName("td")[3];
-              let innerHTML = tdText.innerHTML;
-              const index = innerHTML.indexOf(e);
-
-              if (index >= 0) {
-                innerHTML =
-                  innerHTML.substring(0, index) +
-                  "<span style= 'background-color: yellow' }}>" +
-                  innerHTML.substring(index, index + e.length) +
-                  "</span>" +
-                  innerHTML.substring(index + e.length);
-              }
-
-              tdText.innerHTML = innerHTML;
-            }
-            console.log({ tdText });
-          });
-        }),
+      formatter: function (cell, row) {
+        var htmlInput = `<div>${cell}</div>`;
+        var htmlToReactParser = new HtmlToReactParser();
+        return htmlToReactParser.parse(htmlInput);
       },
       editor: {
         type: Type.TEXTAREA,
