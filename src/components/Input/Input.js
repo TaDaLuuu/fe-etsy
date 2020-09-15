@@ -8,6 +8,7 @@ const InputText = (props) => {
         className="form-control"
         id="inputText"
         placeholder={props.placeholder}
+        value={props.value}
       />
     </div>
   );

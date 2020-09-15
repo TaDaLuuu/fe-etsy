@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import BootstrapTable from "react-bootstrap-table-next";
 import { ExportToCsv } from "export-to-csv";
 import ToolkitProvider, { Search } from "react-bootstrap-table2-toolkit";
@@ -6,114 +6,58 @@ import paginationFactory from "react-bootstrap-table2-paginator";
 import cellEditFactory, { Type } from "react-bootstrap-table2-editor";
 import filterFactory, { selectFilter } from "react-bootstrap-table2-filter";
 import { Parser as HtmlToReactParser } from "html-to-react";
+import fileTM from "../fileTM.js";
+import EtsyDataService from "../services/etsy-service";
 
 const { SearchBar, ClearSearchButton } = Search;
 
 const Table = () => {
   const [rowsDelete, setRowsDelete] = useState([]);
-  const [infoProduct, setInfoProduct] = useState([
-    {
-      imageProduct: [
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-      ],
-      listingID: 1231,
-    },
-    {
-      imageProduct: [
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-      ],
-      listingID: 1231,
-    },
-    {
-      imageProduct: [
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-      ],
-      listingID: 1231,
-    },
-    {
-      imageProduct: [
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-      ],
-      listingID: 1231,
-    },
-    {
-      imageProduct: [
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-      ],
-      listingID: 1231,
-    },
-  ]);
-  const [product, setProduct] = useState([
-    {
-      id: 1,
-      title: " Amalfi Coast Tee, Amalfi Coast Shirt",
-      numberOfSales: 20,
-      image: [
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-      ],
-      check: true,
-    },
-    {
-      id: 2,
-      title: "Vacation Mode T-Shirt, Vacay Shirt",
-      numberOfSales: 29,
-      image: [
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-      ],
-      check: false,
-    },
-    {
-      id: 3,
-      title: "Be Kind Shirt, Equality Shirt",
-      numberOfSales: 30,
-      image: [
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-      ],
-      check: false,
-    },
-    {
-      id: 4,
-      title:
-        "Cactus Succulents Shirt, Vintage Drawing Tee, Plant Lady Gift, Plant Painting, Botanical Drawing Tee, Vintage Flower Drawing Aesthetic Shirt",
-      numberOfSales: 16,
-      image: [
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-      ],
-      check: false,
-    },
-    {
-      id: 5,
-      title:
-        "Floral Daisy Face Mask, Neck Gaiter, Protective Face Mask, Face Shield, Bandana Face Mask, Reusable Washable Mask, Adult Kids Fashion Mask",
-      numberOfSales: 90,
-      image: [
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-      ],
+  const [shop, setShop] = useState([]);
+  const [product, setProduct] = useState([]);
+  useEffect(() => {
+    getShop();
+  }, []);
+  useEffect(() => {
+    getProduct();
+  }, []);
 
-      check: true,
-    },
-  ]);
+  const getShop = () => {
+    EtsyDataService.getAll("https://www.etsy.com/shop/atolyeTEE")
+      .then((response) => {
+        console.log(response);
+        setShop(response.data);
+      })
+      .catch((e) => {
+        console.log(e);
+      });
+  };
 
-  // const stringToHTML = (str) => {
-  //   const td = document.querySelectorAll("tbody tr .cell-product-name");
-  //   console.log({ td });
-  //   td.innerHTML = str;
-  //   return td;
-  // };
+  const getProduct = () => {
+    EtsyDataService.getProduct()
+      .then((response) => {
+        console.log(response);
+        setProduct(response.data);
+      })
+      .catch((e) => {
+        console.log(e);
+      });
+  };
 
-  const txtTM = ["Tee", "Shirt"];
+  const pagination = paginationFactory({
+    page: 1,
+    sizePerPage: 20,
+    sizePerPageList: [
+      { text: "10", value: 10 },
+      { text: "25", value: 25 },
+      { text: "50", value: 50 },
+      { text: "100", value: 100 },
+      { text: "all", value: product.length },
+    ],
+  });
   const transformedProducts = product.map((product) => {
     let html = product.title;
-    txtTM.forEach((e) => {
+    fileTM.forEach((e) => {
       if (html.length > 0) {
         html = html.replaceAll(
           e,
@@ -127,24 +71,14 @@ const Table = () => {
       title: html,
     };
   });
-  const pagination = paginationFactory({
-    page: 1,
-    sizePerPage: 20,
-    sizePerPageList: [
-      { text: "10", value: 10 },
-      { text: "25", value: 25 },
-      { text: "50", value: 50 },
-      { text: "100", value: 100 },
-      { text: "all", value: product.length },
-    ],
-  });
-
   const info = transformedProducts.concat([]);
-  const infoEachProduct = infoProduct.concat([]);
+  const infoEachProduct = product.concat([]);
   infoEachProduct.forEach((e, index) => {
+    console.log(info[index].image);
     info[index].image = info[index].image.concat(e.imageProduct);
     info[index].listingID = e.listingID;
   });
+
   const options = {
     fieldSeparator: ",",
     quoteStrings: '"',
@@ -208,18 +142,19 @@ const Table = () => {
         const imageMain = row.image[0];
         const c = (
           <img
-            name="Tadaluuu"
             src={imageMain}
             alt="img"
             style={{ height: 100, display: "block", marginBottom: 5 }}
             className="image-product"
+            key={imageMain}
           />
         );
         a.splice(0, 1);
         const b = [];
-        a.forEach((e) =>
+        a.forEach((e, index) =>
           b.push(
             <img
+              key={index}
               src={e}
               alt="img"
               style={{ height: 40, marginRight: 5 }}
@@ -267,7 +202,6 @@ const Table = () => {
   ];
   const selectRow = {
     mode: "checkbox",
-    clickToSelect: true,
     clickToEdit: true,
     bgColor: "#fe7171",
     onSelect: (row, isSelect, rowIndex, e) => {
@@ -309,7 +243,7 @@ const Table = () => {
             <button
               type="button"
               onClick={deleteRow}
-              class="btn btn-primary mb-4"
+              className="btn btn-primary mb-4"
             >
               Filter
             </button>
