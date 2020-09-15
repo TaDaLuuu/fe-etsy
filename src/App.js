@@ -76,7 +76,7 @@ function App() {
   // }, []);
 
   const getShop = () => {
-    EtsyDataService.getAll(valueInput)
+    EtsyDataService.getAll("https://www.etsy.com/shop/atolyeTEE")
       .then((response) => {
         console.log(response.data.nameShop);
         setShop(response.data);
@@ -85,6 +85,7 @@ function App() {
         console.log(e);
       });
   };
+  console.log({ shop });
 
   const getProduct = () => {
     EtsyDataService.getProduct()
@@ -221,7 +222,7 @@ function App() {
     {
       dataField: "title",
       text: "Product Name",
-      // sort: true,
+      sort: true,
       classes: "cell-product-name",
       formatter: function (cell, row) {
         var htmlInput = `<div>${cell}</div>`;
@@ -235,14 +236,14 @@ function App() {
     {
       dataField: "numberOfSales",
       text: "Number Of Sales",
-      // sort: true,
+      sort: true,
     },
 
     {
       dataField: "check",
       text: "Check",
-      // sort: true,
-      // filter: selectFilter({ options: qualityType }),
+      sort: true,
+      filter: selectFilter({ options: qualityType }),
     },
     { dataField: "listingID", text: "Listing ID " },
   ];
@@ -270,13 +271,13 @@ function App() {
     },
   };
 
-  // const deleteRow = () => {
-  //   const productsCp = product.concat([]);
-  //   const newProducts = productsCp.filter(
-  //     (product) => !rowsDelete.includes(product.id)
-  //   );
-  //   return setProduct(newProducts);
-  // };
+  const deleteRow = () => {
+    const productsCp = product.concat([]);
+    const newProducts = productsCp.filter(
+      (product) => !rowsDelete.includes(product.id)
+    );
+    return setProduct(newProducts);
+  };
   console.log({ shop });
 
   return (
@@ -321,7 +322,7 @@ function App() {
           <div>
             <button
               type="button"
-              // onClick={deleteRow}
+              onClick={deleteRow}
               className="btn btn-primary mb-4"
             >
               Filter
@@ -352,7 +353,7 @@ function App() {
                 blurToSave: true,
               })}
               selectRow={selectRow}
-              // filter={filterFactory()}
+              filter={filterFactory()}
             />
           </div>
         )}
