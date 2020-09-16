@@ -33,6 +33,7 @@ const Table = () => {
       });
   };
 
+  console.log({ shop });
   const getProduct = () => {
     EtsyDataService.getProduct()
       .then((response) => {

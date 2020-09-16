@@ -8,13 +8,13 @@ const getAll = (url) => {
   });
 };
 const getProduct = (url) => {
-  return http.get("product", {
-    params: {
-      url: url,
-    },
-  });
+  return http.get(`/product?url=${url}`);
+};
+const getInfoShop = (url) => {
+  return http.get(`/infoShop?url=${url}`);
 };
 export default {
   getAll,
   getProduct,
+  getInfoShop,
 };

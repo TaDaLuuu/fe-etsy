@@ -1,3 +1,3 @@
-const txtTM = ["grandma", "grandfather"];
+const txtTM = ["Tee", "Protective", "Mask"];
 
 export default txtTM;

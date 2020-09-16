@@ -29,10 +29,6 @@ const TableVertical = (props) => {
           <TD>{props.title}</TD>
         </tr>
         <tr>
-          <TH>Views:</TH>
-          <TD>{props.views}</TD>
-        </tr>
-        <tr>
           <TH>Sales:</TH>
           <TD>{props.sales}</TD>
         </tr>

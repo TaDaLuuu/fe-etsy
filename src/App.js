@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import TableVertical from "./components/TableVertical/TableVertical";
 import BootstrapTable from "react-bootstrap-table-next";
 import { ExportToCsv } from "export-to-csv";
@@ -9,98 +9,70 @@ import filterFactory, { selectFilter } from "react-bootstrap-table2-filter";
 import { Parser as HtmlToReactParser } from "html-to-react";
 import fileTM from "./fileTM";
 import EtsyDataService from "./services/etsy-service";
-import Input from "./components/Input/Input";
 
 const { SearchBar, ClearSearchButton } = Search;
 function App() {
   const [rowsDelete, setRowsDelete] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [valueInput, setValueInput] = useState("");
-  const [shop, setShop] = useState();
+  const [shopProduct, setShopProduct] = useState([]);
+  const [nameShop, setNameShop] = useState("GodGroup");
+  const [numberOfSalesShop, setNumberOfSalesShop] = useState(0);
+  const [numberOfFavourites, setNumberOfFavourites] = useState(0);
+  const [titleShop, setTitleShop] = useState("");
   const [product, setProduct] = useState([]);
-
-  const [x, setX] = useState([
-    {
-      id: 1,
-      title: " Amalfi Coast Tee, Amalfi Coast Shirt",
-      numberOfSales: 20,
-      image: [
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-      ],
-      check: true,
-    },
-    {
-      id: 2,
-      title: "Vacation Mode T-Shirt, Vacay Shirt",
-      numberOfSales: 29,
-      image: [
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-      ],
-      check: false,
-    },
-    {
-      id: 3,
-      title: "Be Kind Shirt, Equality Shirt",
-      numberOfSales: 30,
-      image: [
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-      ],
-      check: false,
-    },
-    {
-      id: 4,
-      title:
-        "Cactus Succulents Shirt, Vintage Drawing Tee, Plant Lady Gift, Plant Painting, Botanical Drawing Tee, Vintage Flower Drawing Aesthetic Shirt",
-      numberOfSales: 16,
-      image: [
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-      ],
-      check: false,
-    },
-    {
-      id: 5,
-      title:
-        "Floral Daisy Face Mask, Neck Gaiter, Protective Face Mask, Face Shield, Bandana Face Mask, Reusable Washable Mask, Adult Kids Fashion Mask",
-      numberOfSales: 90,
-      image: [
-        "https://images.unsplash.com/photo-1593642532454-e138e28a63f4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80",
-      ],
-
-      check: true,
-    },
-  ]);
-  // useEffect(() => {
-  //   getShop();
-  // });
-  // useEffect(() => {
-  //   getProduct();
-  // }, []);
+  const [infoProduct, setInfoProduct] = useState([]);
 
   const getShop = () => {
-    EtsyDataService.getAll("https://www.etsy.com/shop/atolyeTEE")
+    EtsyDataService.getAll(valueInput)
       .then((response) => {
-        console.log(response.data.nameShop);
-        setShop(response.data);
+        const res = response.data;
+
+        const listLinks = [];
+        res.forEach((e) => listLinks.push(e.link));
+        setShopProduct(res);
+        getDataProduct(listLinks);
       })
       .catch((e) => {
         console.log(e);
       });
   };
-  console.log({ shop });
-
-  const getProduct = () => {
-    EtsyDataService.getProduct()
+  const getInfoShop = () => {
+    EtsyDataService.getInfoShop(valueInput)
       .then((response) => {
-        console.log(response);
-        setProduct(response.data);
+        const res = response.data;
+        setNameShop(res.nameShop);
+        setNumberOfSalesShop(res.numberOfSaleShops);
+        setNumberOfFavourites(res.numberOfFavourites);
+        setTitleShop(res.titleShop);
       })
       .catch((e) => {
         console.log(e);
       });
+  };
+  const getInfo = () => {
+    getInfoShop();
+    getShop();
+  };
+
+  const getDataProduct = async (listLinks) => {
+    const temp = [];
+    for (const ll of listLinks) {
+      await EtsyDataService.getProduct(ll)
+        .then((res) => {
+          temp.push(res.data);
+          console.log({ res });
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    }
+    setInfoProduct(temp);
   };
 
   const pagination = paginationFactory({
     page: 1,
-    sizePerPage: 20,
+    sizePerPage: 5,
     sizePerPageList: [
       { text: "10", value: 10 },
       { text: "25", value: 25 },
@@ -109,29 +81,37 @@ function App() {
       // { text: "all", value: shop.products.length },
     ],
   });
-  const transformedProducts = product.map((product) => {
-    let html = product.title;
+
+  console.log({ shopProduct });
+  const transformedProducts = shopProduct.map((sp) => {
+    let html = sp.title;
     fileTM.forEach((e) => {
       if (html.length > 0) {
         html = html.replaceAll(
           e,
           `<span style="background-color: yellow">${e}</span>`
         );
+        console.log({ html });
       }
     });
 
     return {
-      ...product,
+      ...sp,
       title: html,
     };
   });
-  // const productConcat = transformedProducts.concat([]);
-  // const shopConcat = shop.concat([]);
-  // productConcat.forEach((e, index) => {
-  //   console.log(shopConcat[index].image);
-  //   shopConcat[index].image = shopConcat[index].image.concat(e.imageProduct);
-  //   shopConcat[index].listingID = e.listingID;
-  // });
+  console.log({ transformedProducts });
+
+  const shopProductConcat = transformedProducts.concat([]);
+  const infoProductConcat = infoProduct.concat([]);
+
+  infoProductConcat.forEach((e, index) => {
+    shopProductConcat[index].img = shopProductConcat[index].img.concat(
+      e.arrayImages
+    );
+    shopProductConcat[index].listingID = e.listingID;
+    shopProductConcat[index].listTags = e.listTags;
+  });
 
   const options = {
     fieldSeparator: ",",
@@ -185,38 +165,36 @@ function App() {
     {
       dataField: "id",
       text: "Product ID",
-      // sort: true,
     },
     {
-      dataField: "imageProduct",
+      dataField: "img",
       text: "Image",
-      // sort: true,
       formatter: (cell, row) => {
-        const a = row.image.concat([]);
-        const imageMain = row.image[0];
-        const c = (
+        console.log({ cell });
+        const imageMainSrc = cell[0];
+        const listImageExtrasSrc = cell.slice(1);
+        const imageMain = (
           <img
-            src={imageMain}
+            src={imageMainSrc}
             alt="img"
             style={{ height: 100, display: "block", marginBottom: 5 }}
             className="image-product"
-            key={imageMain}
+            key={imageMainSrc}
           />
         );
-        a.splice(0, 1);
-        const b = [];
-        a.forEach((e, index) =>
-          b.push(
+        const listImageExtra = [];
+        listImageExtrasSrc.forEach((e, index) =>
+          listImageExtra.push(
             <img
               key={index}
               src={e}
               alt="img"
-              style={{ height: 40, marginRight: 5 }}
+              style={{ height: 60, marginRight: 5 }}
               className="image-product"
             />
           )
         );
-        return [c, b];
+        return [imageMain, listImageExtra];
       },
     },
     {
@@ -225,8 +203,8 @@ function App() {
       sort: true,
       classes: "cell-product-name",
       formatter: function (cell, row) {
-        var htmlInput = `<div>${cell}</div>`;
-        var htmlToReactParser = new HtmlToReactParser();
+        const htmlInput = `<div>${cell}</div>`;
+        const htmlToReactParser = new HtmlToReactParser();
         return htmlToReactParser.parse(htmlInput);
       },
       editor: {
@@ -234,11 +212,14 @@ function App() {
       },
     },
     {
-      dataField: "numberOfSales",
-      text: "Number Of Sales",
-      sort: true,
+      dataField: "listTags",
+      text: "Tags",
+      formatter: (cell, row) => {
+        const htmlInput = `<div>${cell} ,  </div>`;
+        const htmlToReactParser = new HtmlToReactParser();
+        return htmlToReactParser.parse(htmlInput);
+      },
     },
-
     {
       dataField: "check",
       text: "Check",
@@ -265,20 +246,18 @@ function App() {
         setRowsDelete(rowsDelete);
       } else
         setRowsDelete((rowsDelete) => {
-          console.log({ rowsDelete });
           return [...rowsDelete, row.id];
         });
     },
   };
 
   const deleteRow = () => {
-    const productsCp = product.concat([]);
-    const newProducts = productsCp.filter(
+    const shopProductsCp = shopProduct.concat([]);
+    const newProducts = shopProductsCp.filter(
       (product) => !rowsDelete.includes(product.id)
     );
-    return setProduct(newProducts);
+    return setShopProduct(newProducts);
   };
-  console.log({ shop });
 
   return (
     <div className="App" style={{ margin: "20px" }}>
@@ -295,7 +274,7 @@ function App() {
           />
         </div>
         <div className="col-1">
-          <button className="btn btn-success" onClick={getShop}>
+          <button className="btn btn-success" onClick={getInfo}>
             Get
           </button>
         </div>
@@ -303,15 +282,21 @@ function App() {
 
       <div className="row mb-5">
         <div className="col-6">
-          <TableVertical />
+          <TableVertical
+            name={nameShop}
+            sales={numberOfSalesShop}
+            favourites={numberOfFavourites}
+            title={titleShop}
+            link={valueInput}
+          />
         </div>
       </div>
 
       <ToolkitProvider
         keyField="id"
-        data={x}
+        data={shopProductConcat}
         columns={columns}
-        search
+        // search
         exportCSV={{
           fileName: "etsy.csv",
         }}
