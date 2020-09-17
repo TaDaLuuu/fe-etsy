@@ -25,6 +25,9 @@ module.exports = {
           tsConfigFile: "tsconfig.json",
         },
       },
+      {
+        test: /\.txt$/,
+      },
     ],
   },
   resolve: {

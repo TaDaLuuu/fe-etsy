@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import TableVertical from "./components/TableVertical/TableVertical";
 import BootstrapTable from "react-bootstrap-table-next";
 import { ExportToCsv } from "export-to-csv";
@@ -7,13 +7,12 @@ import paginationFactory from "react-bootstrap-table2-paginator";
 import cellEditFactory, { Type } from "react-bootstrap-table2-editor";
 import filterFactory, { selectFilter } from "react-bootstrap-table2-filter";
 import { Parser as HtmlToReactParser } from "html-to-react";
-import fileTM from "./fileTM";
 import EtsyDataService from "./services/etsy-service";
-
+import getTM from "./getTM.js";
+import getUnique from "./getUnique";
 const { SearchBar, ClearSearchButton } = Search;
 function App() {
   const [rowsDelete, setRowsDelete] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [valueInput, setValueInput] = useState("");
   const [shopProduct, setShopProduct] = useState([]);
   const [nameShop, setNameShop] = useState("GodGroup");
@@ -22,12 +21,17 @@ function App() {
   const [titleShop, setTitleShop] = useState("");
   const [product, setProduct] = useState([]);
   const [infoProduct, setInfoProduct] = useState([]);
+  const [fundData, setFundData] = useState("");
+  const [textTM, setTextTM] = useState([]);
+  const fileDataTxt = require("./TMList1.txt");
 
+  useEffect(() => {
+    getTM(fileDataTxt);
+  });
   const getShop = () => {
     EtsyDataService.getAll(valueInput)
       .then((response) => {
         const res = response.data;
-
         const listLinks = [];
         res.forEach((e) => listLinks.push(e.link));
         setShopProduct(res);
@@ -57,17 +61,17 @@ function App() {
 
   const getDataProduct = async (listLinks) => {
     const temp = [];
-    for (const ll of listLinks) {
-      await EtsyDataService.getProduct(ll)
-        .then((res) => {
-          temp.push(res.data);
-          console.log({ res });
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    }
-    setInfoProduct(temp);
+    const add = async (ll) => {
+      const result = await EtsyDataService.getProduct(ll);
+      console.log({ result });
+      return temp.push(result.data);
+    };
+    const getData = async () => {
+      return Promise.all(listLinks.map((item) => add(item)));
+    };
+    getData().then((data) => {
+      setInfoProduct(temp);
+    });
   };
 
   const pagination = paginationFactory({
@@ -81,8 +85,7 @@ function App() {
       // { text: "all", value: shop.products.length },
     ],
   });
-
-  console.log({ shopProduct });
+  const fileTM = getTM(fileDataTxt);
   const transformedProducts = shopProduct.map((sp) => {
     let html = sp.title;
     fileTM.forEach((e) => {
@@ -91,7 +94,6 @@ function App() {
           e,
           `<span style="background-color: yellow">${e}</span>`
         );
-        console.log({ html });
       }
     });
 
@@ -100,7 +102,6 @@ function App() {
       title: html,
     };
   });
-  console.log({ transformedProducts });
 
   const shopProductConcat = transformedProducts.concat([]);
   const infoProductConcat = infoProduct.concat([]);
@@ -112,6 +113,8 @@ function App() {
     shopProductConcat[index].listingID = e.listingID;
     shopProductConcat[index].listTags = e.listTags;
   });
+
+  // const data = getUnique(shopProductConcat, "listingID");
 
   const options = {
     fieldSeparator: ",",
@@ -170,14 +173,19 @@ function App() {
       dataField: "img",
       text: "Image",
       formatter: (cell, row) => {
-        console.log({ cell });
         const imageMainSrc = cell[0];
         const listImageExtrasSrc = cell.slice(1);
         const imageMain = (
           <img
             src={imageMainSrc}
             alt="img"
-            style={{ height: 100, display: "block", marginBottom: 5 }}
+            style={{
+              height: 120,
+              width: 120,
+              objectFit: "cover",
+              display: "block",
+              marginBottom: 5,
+            }}
             className="image-product"
             key={imageMainSrc}
           />
@@ -189,7 +197,12 @@ function App() {
               key={index}
               src={e}
               alt="img"
-              style={{ height: 60, marginRight: 5 }}
+              style={{
+                height: 60,
+                width: 60,
+                objectFit: "cover",
+                marginRight: 5,
+              }}
               className="image-product"
             />
           )
@@ -197,6 +210,7 @@ function App() {
         return [imageMain, listImageExtra];
       },
     },
+
     {
       dataField: "title",
       text: "Product Name",
@@ -215,7 +229,7 @@ function App() {
       dataField: "listTags",
       text: "Tags",
       formatter: (cell, row) => {
-        const htmlInput = `<div>${cell} ,  </div>`;
+        const htmlInput = `<div>${cell}  ,  </div>`;
         const htmlToReactParser = new HtmlToReactParser();
         return htmlToReactParser.parse(htmlInput);
       },
@@ -290,13 +304,16 @@ function App() {
             link={valueInput}
           />
         </div>
+        <div className="col-2">
+          <input type="file" id="file" />
+        </div>
       </div>
 
       <ToolkitProvider
         keyField="id"
         data={shopProductConcat}
         columns={columns}
-        // search
+        search
         exportCSV={{
           fileName: "etsy.csv",
         }}
@@ -327,6 +344,9 @@ function App() {
                 <button onClick={exportCSV2} className="btn btn-info">
                   Export CSV by Template 2
                 </button>
+              </div>
+              <div className="col-3">
+                <button className="btn btn-info">Add Template</button>
               </div>
             </div>
             <hr />

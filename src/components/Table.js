@@ -25,7 +25,6 @@ const Table = () => {
   const getShop = () => {
     EtsyDataService.getAll("https://www.etsy.com/shop/atolyeTEE")
       .then((response) => {
-        console.log(response);
         setShop(response.data);
       })
       .catch((e) => {
@@ -33,11 +32,9 @@ const Table = () => {
       });
   };
 
-  console.log({ shop });
   const getProduct = () => {
     EtsyDataService.getProduct()
       .then((response) => {
-        console.log(response);
         setProduct(response.data);
       })
       .catch((e) => {
@@ -75,7 +72,6 @@ const Table = () => {
   const info = transformedProducts.concat([]);
   const infoEachProduct = product.concat([]);
   infoEachProduct.forEach((e, index) => {
-    console.log(info[index].image);
     info[index].image = info[index].image.concat(e.imageProduct);
     info[index].listingID = e.listingID;
   });
@@ -212,7 +208,6 @@ const Table = () => {
         setRowsDelete(rowsDelete);
       } else
         setRowsDelete((rowsDelete) => {
-          console.log({ rowsDelete });
           return [...rowsDelete, row.id];
         });
     },
