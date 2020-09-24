@@ -1,20 +1,20 @@
 import http from "../http-common";
 
 const getAll = (url) => {
-  return http.get("/god", {
+  return http.get("/productsShop", {
     params: {
       url: url,
     },
   });
 };
-const getProduct = (url) => {
-  return http.get(`/product?url=${url}`);
+
+const uploadFileTM = (text) => {
+  return http.post("/uploadFileTM", {
+    text: text,
+  });
 };
-const getInfoShop = (url) => {
-  return http.get(`/infoShop?url=${url}`);
-};
+
 export default {
   getAll,
-  getProduct,
-  getInfoShop,
+  uploadFileTM,
 };

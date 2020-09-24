@@ -2,93 +2,87 @@ import React, { useEffect, useState } from "react";
 import TableVertical from "./components/TableVertical/TableVertical";
 import BootstrapTable from "react-bootstrap-table-next";
 import { ExportToCsv } from "export-to-csv";
-import ToolkitProvider, { Search } from "react-bootstrap-table2-toolkit";
+import ToolkitProvider, {
+  ColumnToggle,
+  Search,
+} from "react-bootstrap-table2-toolkit";
 import paginationFactory from "react-bootstrap-table2-paginator";
 import cellEditFactory, { Type } from "react-bootstrap-table2-editor";
 import filterFactory, { selectFilter } from "react-bootstrap-table2-filter";
 import { Parser as HtmlToReactParser } from "html-to-react";
 import EtsyDataService from "./services/etsy-service";
-import getTM from "./getTM.js";
-import getUnique from "./getUnique";
+
 const { SearchBar, ClearSearchButton } = Search;
+
 function App() {
   const [rowsDelete, setRowsDelete] = useState([]);
   const [valueInput, setValueInput] = useState("");
   const [shopProduct, setShopProduct] = useState([]);
-  const [nameShop, setNameShop] = useState("GodGroup");
-  const [numberOfSalesShop, setNumberOfSalesShop] = useState(0);
-  const [numberOfFavourites, setNumberOfFavourites] = useState(0);
-  const [titleShop, setTitleShop] = useState("");
-  const [product, setProduct] = useState([]);
+  const [products, setProducts] = useState([]);
   const [infoProduct, setInfoProduct] = useState([]);
-  const [fundData, setFundData] = useState("");
-  const [textTM, setTextTM] = useState([]);
-  const fileDataTxt = require("./TMList1.txt");
+  const [infoShop, setInfoShop] = useState({});
+  const [fileTM, setFileTM] = useState("");
+  const [newFileTM, setNewFileTM] = useState("");
+  const [template, setTemplate] = useState("");
 
-  useEffect(() => {
-    getTM(fileDataTxt);
-  });
   const getShop = () => {
     EtsyDataService.getAll(valueInput)
       .then((response) => {
         const res = response.data;
-        const listLinks = [];
-        res.forEach((e) => listLinks.push(e.link));
-        setShopProduct(res);
-        getDataProduct(listLinks);
+        console.log({ res });
+        setInfoShop(res.infoShop);
+        setProducts(res.listProducts);
+        setFileTM(res.fileTM);
+        setTemplate(res.fileTemplate);
       })
       .catch((e) => {
         console.log(e);
       });
-  };
-  const getInfoShop = () => {
-    EtsyDataService.getInfoShop(valueInput)
-      .then((response) => {
-        const res = response.data;
-        setNameShop(res.nameShop);
-        setNumberOfSalesShop(res.numberOfSaleShops);
-        setNumberOfFavourites(res.numberOfFavourites);
-        setTitleShop(res.titleShop);
-      })
-      .catch((e) => {
-        console.log(e);
-      });
-  };
-  const getInfo = () => {
-    getInfoShop();
-    getShop();
   };
 
-  const getDataProduct = async (listLinks) => {
-    const temp = [];
-    const add = async (ll) => {
-      const result = await EtsyDataService.getProduct(ll);
-      console.log({ result });
-      return temp.push(result.data);
+  console.log({ products });
+  const listTM = [];
+  const fileTMSplit = fileTM.split("\n");
+  fileTMSplit.forEach((e) => listTM.push(e));
+  const listTemplate = [];
+  const fileTemplateSplit = template.split("\n");
+  fileTemplateSplit.forEach((e) => listTemplate.push(e));
+  const showFile = async (e) => {
+    e.preventDefault();
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const text = e.target.result;
+      setNewFileTM(text);
     };
-    const getData = async () => {
-      return Promise.all(listLinks.map((item) => add(item)));
-    };
-    getData().then((data) => {
-      setInfoProduct(temp);
-    });
+    reader.readAsText(e.target.files[0]);
+  };
+
+  const uploadFile = () => {
+    console.log({ newFileTM });
+    EtsyDataService.uploadFileTM(newFileTM)
+      .then((res) => {
+        console.log(res.data);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   };
 
   const pagination = paginationFactory({
     page: 1,
-    sizePerPage: 5,
+    sizePerPage: 10,
     sizePerPageList: [
       { text: "10", value: 10 },
       { text: "25", value: 25 },
       { text: "50", value: 50 },
       { text: "100", value: 100 },
-      // { text: "all", value: shop.products.length },
+      { text: "all", value: products.length },
     ],
   });
-  const fileTM = getTM(fileDataTxt);
-  const transformedProducts = shopProduct.map((sp) => {
-    let html = sp.title;
-    fileTM.forEach((e) => {
+
+  const transformedProducts = products.map((product) => {
+    let html = product.name;
+    listTM.forEach((e) => {
       if (html.length > 0) {
         html = html.replaceAll(
           e,
@@ -98,23 +92,10 @@ function App() {
     });
 
     return {
-      ...sp,
-      title: html,
+      ...product,
+      name: html,
     };
   });
-
-  const shopProductConcat = transformedProducts.concat([]);
-  const infoProductConcat = infoProduct.concat([]);
-
-  infoProductConcat.forEach((e, index) => {
-    shopProductConcat[index].img = shopProductConcat[index].img.concat(
-      e.arrayImages
-    );
-    shopProductConcat[index].listingID = e.listingID;
-    shopProductConcat[index].listTags = e.listTags;
-  });
-
-  // const data = getUnique(shopProductConcat, "listingID");
 
   const options = {
     fieldSeparator: ",",
@@ -127,54 +108,65 @@ function App() {
     useBom: true,
     useKeysAsHeaders: true,
   };
+  const arrayTemplate = [];
 
-  const data1 = [];
-  const data2 = [];
-  product.map((e) =>
-    data1.push({
-      id: e.id,
-      name: e.name,
-      school: "",
-      numberOfSales: e.numberOfSales,
-      age: "",
-      image: e.image,
-      check: e.check,
-    })
-  );
-  product.map((e) =>
-    data2.push({
-      id: e.id,
-      name: e.name,
-      school: "",
-      numberOfSales: e.numberOfSales,
-      age: "",
-      god: "",
-      image: e.image,
-      check: e.check,
-    })
-  );
+  listTemplate.forEach((list, index) => {
+    const template = [];
+    for (let i = 0; i < products.length; i++) {
+      const name = list.split(".")[0];
+      const fields = list.split(".")[1] || "";
+      const listField = fields.split(",") || [];
+      let data = {};
+      for (let j = 0; j < listField.length; j++) {
+        data[`${listField[j]}`] = products[i][`${listField[j]}`];
+      }
+      template.push(data);
+    }
+    arrayTemplate.push(template);
+  });
+
   const csvExporter = new ExportToCsv(options);
+  arrayTemplate.forEach((e, index) => {});
   const exportCSV1 = () => {
-    csvExporter.generateCsv(data1);
+    csvExporter.generateCsv(arrayTemplate[0]);
   };
   const exportCSV2 = () => {
-    csvExporter.generateCsv(data2);
+    csvExporter.generateCsv(arrayTemplate[1]);
   };
-  const qualityType = {
-    true: "true",
-    false: "false",
-  };
+
   const columns = [
     {
-      dataField: "id",
+      dataField: "id_product",
       text: "Product ID",
+      isKey: true,
     },
     {
-      dataField: "img",
+      dataField: "images_product",
       text: "Image",
       formatter: (cell, row) => {
-        const imageMainSrc = cell[0];
-        const listImageExtrasSrc = cell.slice(1);
+        const cell1 = cell.slice(2, -2);
+
+        const mapObj = {
+          "75x75": "fullxfull",
+          "340x270": "fullxfull",
+          "180x180": "fullxfull",
+        };
+        const resizeImages = cell1.replaceAll(
+          /75x75|340x270|180x180/gi,
+          function (matched) {
+            return mapObj[matched];
+          }
+        );
+        const images = resizeImages.split(",");
+        const newImages = [];
+        let imageMainSrc = "";
+        const listImageExtra = [];
+        imageMainSrc = images[0].slice(0, -1);
+        const listImageExtrasSrc = images.slice(1);
+        listImageExtrasSrc.forEach((e) => {
+          const img = e.slice(1, -1);
+          newImages.push(img);
+        });
         const imageMain = (
           <img
             src={imageMainSrc}
@@ -190,8 +182,7 @@ function App() {
             key={imageMainSrc}
           />
         );
-        const listImageExtra = [];
-        listImageExtrasSrc.forEach((e, index) =>
+        newImages.forEach((e, index) => {
           listImageExtra.push(
             <img
               key={index}
@@ -205,14 +196,13 @@ function App() {
               }}
               className="image-product"
             />
-          )
-        );
+          );
+        });
         return [imageMain, listImageExtra];
       },
     },
-
     {
-      dataField: "title",
+      dataField: "name",
       text: "Product Name",
       sort: true,
       classes: "cell-product-name",
@@ -226,7 +216,7 @@ function App() {
       },
     },
     {
-      dataField: "listTags",
+      dataField: "tags",
       text: "Tags",
       formatter: (cell, row) => {
         const htmlInput = `<div>${cell}  ,  </div>`;
@@ -235,12 +225,9 @@ function App() {
       },
     },
     {
-      dataField: "check",
-      text: "Check",
-      sort: true,
-      filter: selectFilter({ options: qualityType }),
+      dataField: "listing_id",
+      text: "Listing ID",
     },
-    { dataField: "listingID", text: "Listing ID " },
   ];
 
   const defaultSorted = [
@@ -251,26 +238,32 @@ function App() {
   ];
   const selectRow = {
     mode: "checkbox",
+    bgColor: "#00BFFF",
     clickToEdit: true,
-    bgColor: "#fe7171",
     onSelect: (row, isSelect, rowIndex, e) => {
-      if (rowsDelete.find((e) => e === row.id) !== undefined) {
-        const index = rowsDelete.indexOf(row.id);
+      if (rowsDelete.find((x) => x === row.id_product) !== undefined) {
+        const index = rowsDelete.indexOf(row.id_product);
         rowsDelete.splice(index, 1);
         setRowsDelete(rowsDelete);
       } else
         setRowsDelete((rowsDelete) => {
-          return [...rowsDelete, row.id];
+          return [...rowsDelete, row.id_product];
         });
+    },
+    onSelectAll: (isSelected, rows) => {
+      const arrIdProduct = [];
+      rows.forEach((e) => arrIdProduct.push(e.id_product));
+      setRowsDelete(arrIdProduct);
     },
   };
 
   const deleteRow = () => {
-    const shopProductsCp = shopProduct.concat([]);
+    const shopProductsCp = products.concat([]);
     const newProducts = shopProductsCp.filter(
-      (product) => !rowsDelete.includes(product.id)
+      (product) => !rowsDelete.includes(product.id_product)
     );
-    return setShopProduct(newProducts);
+    console.log({ newProducts });
+    return setProducts(newProducts);
   };
 
   return (
@@ -288,7 +281,7 @@ function App() {
           />
         </div>
         <div className="col-1">
-          <button className="btn btn-success" onClick={getInfo}>
+          <button className="btn btn-success" onClick={getShop}>
             Get
           </button>
         </div>
@@ -297,21 +290,24 @@ function App() {
       <div className="row mb-5">
         <div className="col-6">
           <TableVertical
-            name={nameShop}
-            sales={numberOfSalesShop}
-            favourites={numberOfFavourites}
-            title={titleShop}
+            name={infoShop.name}
+            sales={infoShop.number_of_sale}
+            favourites={infoShop.number_of_favourite}
+            title={infoShop.title}
             link={valueInput}
           />
         </div>
         <div className="col-2">
-          <input type="file" id="file" />
+          <input type="file" id="file" onChange={(e) => showFile(e)} />
+        </div>
+        <div className="col-2">
+          <button onClick={uploadFile}>Upload File</button>
         </div>
       </div>
 
       <ToolkitProvider
         keyField="id"
-        data={shopProductConcat}
+        data={transformedProducts}
         columns={columns}
         search
         exportCSV={{
@@ -335,16 +331,25 @@ function App() {
               <ClearSearchButton {...props.searchProps} />
             </div>
             <div className="row">
-              <div className="col-3">
-                <button onClick={exportCSV1} className="btn btn-info">
+              {arrayTemplate.forEach((e) => {
+                return (
+                  // <div className="col-3">
+                  //   <button className="btn btn-info">
+                  //     Export CSV by Template 1
+                  //   </button>
+                  // </div>
+                  <h1>adad</h1>
+                );
+              })}
+              {/* <button onClick={exportCSV1} className="btn btn-info">
                   Export CSV by Template 1
                 </button>
               </div>
               <div className="col-3">
                 <button onClick={exportCSV2} className="btn btn-info">
                   Export CSV by Template 2
-                </button>
-              </div>
+                </button> */}
+
               <div className="col-3">
                 <button className="btn btn-info">Add Template</button>
               </div>
@@ -359,6 +364,8 @@ function App() {
               })}
               selectRow={selectRow}
               filter={filterFactory()}
+              keyField="id_product"
+              deleteRow
             />
           </div>
         )}
