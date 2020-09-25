@@ -1,2 +1,0 @@
-id,image,name,tags,age,listing_id,check
-id,school, company,image,name,tags,age,listing_id,check

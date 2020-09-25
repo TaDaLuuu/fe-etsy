@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import styled from "styled-components";
 const TableVertical = (props) => {
   const Table = styled.table`
@@ -7,9 +7,11 @@ const TableVertical = (props) => {
     text-align: center;
   `;
   const TH = styled.th`
+    width: 40%;
     border: 1px solid black;
   `;
   const TD = styled.td`
+    width: 60%;
     border: 1px solid black;
   `;
 

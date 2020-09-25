@@ -1,35 +1,32 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import TableVertical from "./components/TableVertical/TableVertical";
 import BootstrapTable from "react-bootstrap-table-next";
 import { ExportToCsv } from "export-to-csv";
-import ToolkitProvider, {
-  ColumnToggle,
-  Search,
-} from "react-bootstrap-table2-toolkit";
+import ToolkitProvider, { Search } from "react-bootstrap-table2-toolkit";
 import paginationFactory from "react-bootstrap-table2-paginator";
 import cellEditFactory, { Type } from "react-bootstrap-table2-editor";
-import filterFactory, { selectFilter } from "react-bootstrap-table2-filter";
+import filterFactory from "react-bootstrap-table2-filter";
 import { Parser as HtmlToReactParser } from "html-to-react";
 import EtsyDataService from "./services/etsy-service";
+import "./style.css";
+import ModalImage from "./components/ModalImage/modal-image";
 
 const { SearchBar, ClearSearchButton } = Search;
 
 function App() {
   const [rowsDelete, setRowsDelete] = useState([]);
   const [valueInput, setValueInput] = useState("");
-  const [shopProduct, setShopProduct] = useState([]);
   const [products, setProducts] = useState([]);
-  const [infoProduct, setInfoProduct] = useState([]);
   const [infoShop, setInfoShop] = useState({});
   const [fileTM, setFileTM] = useState("");
   const [newFileTM, setNewFileTM] = useState("");
   const [template, setTemplate] = useState("");
+  const [newTemplate, setNewTemplate] = useState("");
 
   const getShop = () => {
     EtsyDataService.getAll(valueInput)
       .then((response) => {
         const res = response.data;
-        console.log({ res });
         setInfoShop(res.infoShop);
         setProducts(res.listProducts);
         setFileTM(res.fileTM);
@@ -40,14 +37,18 @@ function App() {
       });
   };
 
-  console.log({ products });
   const listTM = [];
   const fileTMSplit = fileTM.split("\n");
   fileTMSplit.forEach((e) => listTM.push(e));
   const listTemplate = [];
   const fileTemplateSplit = template.split("\n");
-  fileTemplateSplit.forEach((e) => listTemplate.push(e));
-  const showFile = async (e) => {
+  fileTemplateSplit.forEach((e) => {
+    if (e !== "") {
+      listTemplate.push(e);
+    }
+  });
+
+  const showFileTM = async (e) => {
     e.preventDefault();
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -57,11 +58,32 @@ function App() {
     reader.readAsText(e.target.files[0]);
   };
 
+  const showFileTemplate = async (e) => {
+    e.preventDefault();
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const text = e.target.result;
+      setNewTemplate(text);
+    };
+    reader.readAsText(e.target.files[0]);
+  };
+
   const uploadFile = () => {
-    console.log({ newFileTM });
     EtsyDataService.uploadFileTM(newFileTM)
       .then((res) => {
-        console.log(res.data);
+        const file = document.getElementById("fileTM");
+        file.value = "";
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  const addTemplate = () => {
+    EtsyDataService.addTemplate(newTemplate)
+      .then((res) => {
+        const file = document.getElementById("fileTemplate");
+        file.value = "";
       })
       .catch((err) => {
         console.log(err);
@@ -109,42 +131,43 @@ function App() {
     useKeysAsHeaders: true,
   };
   const arrayTemplate = [];
-
+  const nameTemplate = [];
   listTemplate.forEach((list, index) => {
     const template = [];
+    let name = "";
     for (let i = 0; i < products.length; i++) {
-      const name = list.split(".")[0];
+      name = list.split(".")[0];
       const fields = list.split(".")[1] || "";
       const listField = fields.split(",") || [];
       let data = {};
       for (let j = 0; j < listField.length; j++) {
         data[`${listField[j]}`] = products[i][`${listField[j]}`];
       }
+
       template.push(data);
     }
+    nameTemplate.push(name);
     arrayTemplate.push(template);
   });
 
   const csvExporter = new ExportToCsv(options);
-  arrayTemplate.forEach((e, index) => {});
-  const exportCSV1 = () => {
-    csvExporter.generateCsv(arrayTemplate[0]);
-  };
-  const exportCSV2 = () => {
-    csvExporter.generateCsv(arrayTemplate[1]);
-  };
-
   const columns = [
     {
       dataField: "id_product",
       text: "Product ID",
       isKey: true,
+      headerStyle: (column, colIndex) => {
+        return { width: "1%" };
+      },
     },
     {
       dataField: "images_product",
       text: "Image",
+      headerStyle: (column, colIndex) => {
+        return { width: "34%" };
+      },
       formatter: (cell, row) => {
-        const cell1 = cell.slice(2, -2);
+        const cell1 = cell.slice(2, -1);
 
         const mapObj = {
           "75x75": "fullxfull",
@@ -168,35 +191,12 @@ function App() {
           newImages.push(img);
         });
         const imageMain = (
-          <img
-            src={imageMainSrc}
-            alt="img"
-            style={{
-              height: 120,
-              width: 120,
-              objectFit: "cover",
-              display: "block",
-              marginBottom: 5,
-            }}
-            className="image-product"
-            key={imageMainSrc}
-          />
+          <div style={{ display: "block" }}>
+            <ModalImage src={imageMainSrc} ratio={`1:1`} />
+          </div>
         );
         newImages.forEach((e, index) => {
-          listImageExtra.push(
-            <img
-              key={index}
-              src={e}
-              alt="img"
-              style={{
-                height: 60,
-                width: 60,
-                objectFit: "cover",
-                marginRight: 5,
-              }}
-              className="image-product"
-            />
-          );
+          listImageExtra.push(<ModalImage src={e} ratio={`3:2`} />);
         });
         return [imageMain, listImageExtra];
       },
@@ -204,6 +204,9 @@ function App() {
     {
       dataField: "name",
       text: "Product Name",
+      headerStyle: (column, colIndex) => {
+        return { width: "30%" };
+      },
       sort: true,
       classes: "cell-product-name",
       formatter: function (cell, row) {
@@ -218,8 +221,12 @@ function App() {
     {
       dataField: "tags",
       text: "Tags",
+      headerStyle: (column, colIndex) => {
+        return { width: "25%" };
+      },
       formatter: (cell, row) => {
-        const htmlInput = `<div>${cell}  ,  </div>`;
+        console.log({ cell });
+        const htmlInput = `<div>${cell}</div>`;
         const htmlToReactParser = new HtmlToReactParser();
         return htmlToReactParser.parse(htmlInput);
       },
@@ -227,6 +234,9 @@ function App() {
     {
       dataField: "listing_id",
       text: "Listing ID",
+      headerStyle: (column, colIndex) => {
+        return { width: "10%" };
+      },
     },
   ];
 
@@ -262,7 +272,6 @@ function App() {
     const newProducts = shopProductsCp.filter(
       (product) => !rowsDelete.includes(product.id_product)
     );
-    console.log({ newProducts });
     return setProducts(newProducts);
   };
 
@@ -298,10 +307,12 @@ function App() {
           />
         </div>
         <div className="col-2">
-          <input type="file" id="file" onChange={(e) => showFile(e)} />
+          <input type="file" id="fileTM" onChange={(e) => showFileTM(e)} />
         </div>
         <div className="col-2">
-          <button onClick={uploadFile}>Upload File</button>
+          <button onClick={uploadFile} className="btn btn-info">
+            Upload File TM
+          </button>
         </div>
       </div>
 
@@ -331,27 +342,30 @@ function App() {
               <ClearSearchButton {...props.searchProps} />
             </div>
             <div className="row">
-              {arrayTemplate.forEach((e) => {
+              {arrayTemplate.map((e, index) => {
                 return (
-                  // <div className="col-3">
-                  //   <button className="btn btn-info">
-                  //     Export CSV by Template 1
-                  //   </button>
-                  // </div>
-                  <h1>adad</h1>
+                  <div className="col-2">
+                    <button
+                      className="btn btn-info btn-block"
+                      onClick={() => csvExporter.generateCsv(e)}
+                    >
+                      {nameTemplate[index]}
+                    </button>
+                  </div>
                 );
               })}
-              {/* <button onClick={exportCSV1} className="btn btn-info">
-                  Export CSV by Template 1
-                </button>
-              </div>
-              <div className="col-3">
-                <button onClick={exportCSV2} className="btn btn-info">
-                  Export CSV by Template 2
-                </button> */}
 
-              <div className="col-3">
-                <button className="btn btn-info">Add Template</button>
+              <div className="col-2">
+                <input
+                  type="file"
+                  id="fileTemplate"
+                  onChange={(e) => showFileTemplate(e)}
+                />
+              </div>
+              <div className="col-2">
+                <button onClick={addTemplate} className="btn btn-info">
+                  Add Template
+                </button>
               </div>
             </div>
             <hr />

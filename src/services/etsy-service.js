@@ -14,7 +14,14 @@ const uploadFileTM = (text) => {
   });
 };
 
+const addTemplate = (text) => {
+  return http.post("/addTemplate", {
+    text: text,
+  });
+};
+
 export default {
   getAll,
   uploadFileTM,
+  addTemplate,
 };
