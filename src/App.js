@@ -1,14 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import TableVertical from "./components/TableVertical/TableVertical";
 import BootstrapTable from "react-bootstrap-table-next";
 import { ExportToCsv } from "export-to-csv";
 import ToolkitProvider, { Search } from "react-bootstrap-table2-toolkit";
-import paginationFactory from "react-bootstrap-table2-paginator";
-import cellEditFactory, { Type } from "react-bootstrap-table2-editor";
+import configTable from "./config-table";
+import cellEditFactory from "react-bootstrap-table2-editor";
 import filterFactory from "react-bootstrap-table2-filter";
-import { Parser as HtmlToReactParser } from "html-to-react";
 import EtsyDataService from "./services/etsy-service";
-import "./style.css";
+import { Parser as HtmlToReactParser } from "html-to-react";
+import { Type } from "react-bootstrap-table2-editor";
 import ModalImage from "./components/ModalImage/modal-image";
 
 const { SearchBar, ClearSearchButton } = Search;
@@ -22,6 +22,43 @@ function App() {
   const [newFileTM, setNewFileTM] = useState("");
   const [template, setTemplate] = useState("");
   const [newTemplate, setNewTemplate] = useState("");
+  const [currentRow, setCurrentRow] = useState(0);
+  useEffect(() => {}, [products]);
+  const hiddenFileInput = useRef(null);
+
+  const rowEvents = {
+    onClick: (e, row, rowIndex) => {
+      console.log("id_product", row.id_product);
+      setCurrentRow(row.id_product);
+    },
+  };
+  console.log({ currentRow });
+  const addImage = () => {
+    hiddenFileInput.current.click();
+  };
+
+  const handleChangeImage = async (e) => {
+    const imageUpload = e.target.files[0];
+
+    // console.log(URL.createObjectURL(imageUpload));
+    const imageUploadUrl = URL.createObjectURL(imageUpload);
+    setProducts(
+      [...products].map((obj, index) => {
+        console.log({ currentRow });
+        if (obj.id_product === currentRow) {
+          obj.images_product = obj.images_product.slice(0, -1);
+          obj.images_product = obj.images_product
+            .concat(',"')
+            .concat(imageUploadUrl)
+            .concat('""');
+          return {
+            ...obj,
+          };
+        } else return obj;
+      })
+    );
+    return products;
+  };
 
   const getShop = () => {
     EtsyDataService.getAll(valueInput)
@@ -90,18 +127,6 @@ function App() {
       });
   };
 
-  const pagination = paginationFactory({
-    page: 1,
-    sizePerPage: 10,
-    sizePerPageList: [
-      { text: "10", value: 10 },
-      { text: "25", value: 25 },
-      { text: "50", value: 50 },
-      { text: "100", value: 100 },
-      { text: "all", value: products.length },
-    ],
-  });
-
   const transformedProducts = products.map((product) => {
     let html = product.name;
     listTM.forEach((e) => {
@@ -119,17 +144,6 @@ function App() {
     };
   });
 
-  const options = {
-    fieldSeparator: ",",
-    quoteStrings: '"',
-    decimalSeparator: ".",
-    showLabels: true,
-    showTitle: true,
-    title: "My Awesome CSV",
-    useTextFile: false,
-    useBom: true,
-    useKeysAsHeaders: true,
-  };
   const arrayTemplate = [];
   const nameTemplate = [];
   listTemplate.forEach((list, index) => {
@@ -150,102 +164,8 @@ function App() {
     arrayTemplate.push(template);
   });
 
-  const csvExporter = new ExportToCsv(options);
-  const columns = [
-    {
-      dataField: "id_product",
-      text: "Product ID",
-      isKey: true,
-      headerStyle: (column, colIndex) => {
-        return { width: "1%" };
-      },
-    },
-    {
-      dataField: "images_product",
-      text: "Image",
-      headerStyle: (column, colIndex) => {
-        return { width: "34%" };
-      },
-      formatter: (cell, row) => {
-        const cell1 = cell.slice(2, -1);
+  const csvExporter = new ExportToCsv(configTable.options());
 
-        const mapObj = {
-          "75x75": "fullxfull",
-          "340x270": "fullxfull",
-          "180x180": "fullxfull",
-        };
-        const resizeImages = cell1.replaceAll(
-          /75x75|340x270|180x180/gi,
-          function (matched) {
-            return mapObj[matched];
-          }
-        );
-        const images = resizeImages.split(",");
-        const newImages = [];
-        let imageMainSrc = "";
-        const listImageExtra = [];
-        imageMainSrc = images[0].slice(0, -1);
-        const listImageExtrasSrc = images.slice(1);
-        listImageExtrasSrc.forEach((e) => {
-          const img = e.slice(1, -1);
-          newImages.push(img);
-        });
-        const imageMain = (
-          <div style={{ display: "block" }}>
-            <ModalImage src={imageMainSrc} ratio={`1:1`} />
-          </div>
-        );
-        newImages.forEach((e, index) => {
-          listImageExtra.push(<ModalImage src={e} ratio={`3:2`} />);
-        });
-        return [imageMain, listImageExtra];
-      },
-    },
-    {
-      dataField: "name",
-      text: "Product Name",
-      headerStyle: (column, colIndex) => {
-        return { width: "30%" };
-      },
-      sort: true,
-      classes: "cell-product-name",
-      formatter: function (cell, row) {
-        const htmlInput = `<div>${cell}</div>`;
-        const htmlToReactParser = new HtmlToReactParser();
-        return htmlToReactParser.parse(htmlInput);
-      },
-      editor: {
-        type: Type.TEXTAREA,
-      },
-    },
-    {
-      dataField: "tags",
-      text: "Tags",
-      headerStyle: (column, colIndex) => {
-        return { width: "25%" };
-      },
-      formatter: (cell, row) => {
-        console.log({ cell });
-        const htmlInput = `<div>${cell}</div>`;
-        const htmlToReactParser = new HtmlToReactParser();
-        return htmlToReactParser.parse(htmlInput);
-      },
-    },
-    {
-      dataField: "listing_id",
-      text: "Listing ID",
-      headerStyle: (column, colIndex) => {
-        return { width: "10%" };
-      },
-    },
-  ];
-
-  const defaultSorted = [
-    {
-      dataField: "name",
-      order: "desc",
-    },
-  ];
   const selectRow = {
     mode: "checkbox",
     bgColor: "#00BFFF",
@@ -274,6 +194,116 @@ function App() {
     );
     return setProducts(newProducts);
   };
+  const columns = [
+    {
+      dataField: "id_product",
+      text: "Product ID",
+      isKey: true,
+      headerStyle: (column, colIndex) => {
+        return { width: "1%" };
+      },
+    },
+    {
+      dataField: "images_product",
+      text: "Image",
+      headerStyle: (column, colIndex) => {
+        return { width: "34%" };
+      },
+
+      formatter: (cell, cellIndex, row, rowIndex) => {
+        const cell1 = cell.slice(2, -1);
+        const mapObj = {
+          "75x75": "fullxfull",
+          "340x270": "fullxfull",
+          "180x180": "fullxfull",
+        };
+        const resizeImages = cell1.replaceAll(
+          /75x75|340x270|180x180/gi,
+          function (matched) {
+            return mapObj[matched];
+          }
+        );
+        const images = resizeImages.split('",');
+        const newImages = [];
+        let imageMainSrc = "";
+        const listImageExtra = [];
+        imageMainSrc = images[0];
+        const listImageExtrasSrc = images.slice(1);
+        listImageExtrasSrc.forEach((e, index) => {
+          if (index >= listImageExtrasSrc.length - 1) {
+            const img = e.slice(1, -1);
+            newImages.push(img);
+          } else {
+            const img = e.slice(1);
+            newImages.push(img);
+          }
+        });
+        const imageMain = (
+          <div style={{ display: "block" }}>
+            <ModalImage src={imageMainSrc} ratio={`1:1`} />
+          </div>
+        );
+        newImages.forEach((e) => {
+          listImageExtra.push(<ModalImage src={e} ratio={`3:2`} />);
+        });
+
+        const imageAdd = <img src="adas" alt="img" />;
+
+        const button = (
+          <div>
+            <input
+              type="file"
+              id="imgupload"
+              style={{ display: "none" }}
+              onChange={handleChangeImage}
+              ref={hiddenFileInput}
+            />
+            <button id="OpenImgUpload" onClick={addImage}>
+              Image Upload
+            </button>
+          </div>
+        );
+
+        return [imageMain, listImageExtra, imageAdd, button];
+      },
+    },
+    {
+      dataField: "name",
+      text: "Product Name",
+      headerStyle: (column, colIndex) => {
+        return { width: "30%" };
+      },
+      sort: true,
+      classes: "cell-product-name",
+      formatter: function (cell, row) {
+        const htmlInput = `<div>${cell}</div>`;
+        const htmlToReactParser = new HtmlToReactParser();
+        return htmlToReactParser.parse(htmlInput);
+      },
+      editor: {
+        type: Type.TEXTAREA,
+      },
+    },
+    {
+      dataField: "tags",
+      text: "Tags",
+      headerStyle: (column, colIndex) => {
+        return { width: "25%" };
+      },
+      formatter: (cell, row) => {
+        const htmlInput = `<div>${cell}</div>`;
+        const htmlToReactParser = new HtmlToReactParser();
+        return htmlToReactParser.parse(htmlInput);
+      },
+    },
+    {
+      dataField: "listing_id",
+      text: "Listing ID",
+      headerStyle: (column, colIndex) => {
+        return { width: "10%" };
+      },
+    },
+  ];
 
   return (
     <div className="App" style={{ margin: "20px" }}>
@@ -325,7 +355,7 @@ function App() {
           fileName: "etsy.csv",
         }}
         bootstrap4
-        defaultSorted={defaultSorted}
+        defaultSorted={configTable.defaultSorted()}
       >
         {(props) => (
           <div>
@@ -371,7 +401,7 @@ function App() {
             <hr />
             <BootstrapTable
               {...props.baseProps}
-              pagination={pagination}
+              pagination={configTable.pagination()}
               cellEdit={cellEditFactory({
                 mode: "dbclick",
                 blurToSave: true,
@@ -380,6 +410,7 @@ function App() {
               filter={filterFactory()}
               keyField="id_product"
               deleteRow
+              rowEvents={rowEvents}
             />
           </div>
         )}
