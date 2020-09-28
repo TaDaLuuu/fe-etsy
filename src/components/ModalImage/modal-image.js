@@ -84,14 +84,23 @@ export default class ModalImage extends React.Component {
   }
 
   render() {
+    let button;
+    if (this.props.src !== "") {
+      button = (
+        <button
+          type="button"
+          className="close"
+          aria-label="Close"
+          onClick={this.props.deleteImage}
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      );
+    }
     return (
       <div className="lp-modal-image">
-        <img
-          className="image"
-          src={this.props.src}
-          alt={this.props.alt}
-          onClick={this.showModal}
-        />
+        <img className="image" src={this.props.src} alt={this.props.alt} />
+        {button}
         <div className="modal">
           <span className="close" onClick={this.hideModal}>
             ×

@@ -27,6 +27,14 @@
   cursor: pointer;
 }
 
+.lp-modal-image > .image[src=""] {
+  display: none;
+}
+
+.lp-modal-image > .image[src=""] .close {
+  display: none;
+}
+
 .lp-modal-image > .modal {
   display: none;
   position: fixed;

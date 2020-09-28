@@ -23,28 +23,17 @@ function App() {
   const [template, setTemplate] = useState("");
   const [newTemplate, setNewTemplate] = useState("");
   const [currentRow, setCurrentRow] = useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
   useEffect(() => {}, [products]);
   const hiddenFileInput = useRef(null);
 
-  const rowEvents = {
-    onClick: (e, row, rowIndex) => {
-      console.log("id_product", row.id_product);
-      setCurrentRow(row.id_product);
-    },
-  };
-  console.log({ currentRow });
-  const addImage = () => {
-    hiddenFileInput.current.click();
-  };
-
-  const handleChangeImage = async (e) => {
+  const handleChangeImage = (e) => {
     const imageUpload = e.target.files[0];
-
-    // console.log(URL.createObjectURL(imageUpload));
     const imageUploadUrl = URL.createObjectURL(imageUpload);
+    console.log({ currentRow });
     setProducts(
       [...products].map((obj, index) => {
-        console.log({ currentRow });
         if (obj.id_product === currentRow) {
           obj.images_product = obj.images_product.slice(0, -1);
           obj.images_product = obj.images_product
@@ -58,6 +47,47 @@ function App() {
       })
     );
     return products;
+  };
+
+  const deleteImage = (arr, i) => {
+    setProducts(
+      [...products].map((obj, index) => {
+        console.log({ currentRow });
+        if (obj.id_product === currentRow) {
+          let x = "";
+          console.log({ i });
+          arr.splice(index, 1);
+          arr.forEach((e) => {
+            x = x.concat(x).concat('",');
+          });
+          console.log({ x });
+          obj.images_product = x;
+          return {
+            ...obj,
+          };
+        } else return obj;
+      })
+    );
+    return products;
+  };
+
+  const rowEvents = {
+    onClick: (e, row, rowIndex) => {
+      // console.log(1, row);
+      // const a = row.images_product;
+      // const x = a.split('",');
+      // console.log({ x });
+      // setCurrentImageIndex(1);
+      setCurrentRow(row.id_product);
+      // deleteImage();
+    },
+    onChange: (e, row, rowIndex) => {
+      handleChangeImage(e);
+    },
+  };
+
+  const addImage = () => {
+    hiddenFileInput.current.click();
   };
 
   const getShop = () => {
@@ -210,8 +240,9 @@ function App() {
         return { width: "34%" };
       },
 
-      formatter: (cell, cellIndex, row, rowIndex) => {
+      formatter: (cell, cellIndex, row) => {
         const cell1 = cell.slice(2, -1);
+        console.log({ cell });
         const mapObj = {
           "75x75": "fullxfull",
           "340x270": "fullxfull",
@@ -239,32 +270,98 @@ function App() {
           }
         });
         const imageMain = (
-          <div style={{ display: "block" }}>
-            <ModalImage src={imageMainSrc} ratio={`1:1`} />
+          <div style={{ display: "block" }} key={imageMainSrc}>
+            <ModalImage
+              src={imageMainSrc}
+              ratio={`1:1`}
+              deleteImage={() => {
+                setProducts(
+                  products.map((obj, index) => {
+                    if (obj.id_product === cellIndex.id_product) {
+                      let x = obj.images_product.split(",");
+                      console.log({ x });
+                      x = x.splice(1);
+                      x[0] = "{".concat(x[0]);
+                      x[x.length - 1] = x.slice(0, -1);
+                      console.log({ x });
+                      let a = "";
+                      x.forEach((e) => {
+                        a = a.concat(e).concat(",");
+                      });
+                      console.log({ a });
+
+                      obj.images_product = a;
+                      return obj;
+                    } else return obj;
+                  })
+                );
+                return products;
+              }}
+            />
           </div>
         );
-        newImages.forEach((e) => {
-          listImageExtra.push(<ModalImage src={e} ratio={`3:2`} />);
+        newImages.forEach((e, i) => {
+          listImageExtra.push(
+            <ModalImage
+              key={i}
+              src={e}
+              ratio={`3:2`}
+              deleteImage={() => {
+                setProducts(
+                  products.map((obj, index) => {
+                    if (obj.id_product === cellIndex.id_product) {
+                      let x = "";
+                      console.log({ listImageExtrasSrc });
+                      listImageExtrasSrc.splice(i, 1);
+                      if (i !== newImages.length - 1) {
+                        listImageExtrasSrc[
+                          listImageExtrasSrc.length - 1
+                        ] = listImageExtrasSrc[
+                          listImageExtrasSrc.length - 1
+                        ].slice(0, -1);
+                      }
+                      listImageExtrasSrc.forEach((e, index) => {
+                        if (index < listImageExtrasSrc.length - 1) {
+                          x = x.concat(e).concat('",');
+                        } else {
+                          x = x.concat(e);
+                        }
+                      });
+                      const images_product = '{"'
+                        .concat(imageMainSrc)
+                        .concat('",')
+                        .concat(x)
+                        .concat('"}');
+                      obj.images_product = images_product;
+                      return obj;
+                    } else return obj;
+                  })
+                );
+                return products;
+              }}
+            />
+          );
         });
 
-        const imageAdd = <img src="adas" alt="img" />;
-
         const button = (
-          <div>
+          <div className="mt-2" key="button-upload">
             <input
               type="file"
               id="imgupload"
               style={{ display: "none" }}
-              onChange={handleChangeImage}
               ref={hiddenFileInput}
             />
-            <button id="OpenImgUpload" onClick={addImage}>
+            <button
+              id="OpenImgUpload"
+              className="btn btn-info"
+              onClick={addImage}
+            >
               Image Upload
             </button>
           </div>
         );
 
-        return [imageMain, listImageExtra, imageAdd, button];
+        return [imageMain, listImageExtra, button];
       },
     },
     {
