@@ -20,8 +20,15 @@ const addTemplate = (text) => {
   });
 };
 
+const updateDataToDB = (products) => {
+  return http.put("/updateDataToDB", {
+    products: products,
+  });
+};
+
 export default {
   getAll,
   uploadFileTM,
   addTemplate,
+  updateDataToDB,
 };

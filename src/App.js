@@ -23,68 +23,10 @@ function App() {
   const [template, setTemplate] = useState("");
   const [newTemplate, setNewTemplate] = useState("");
   const [currentRow, setCurrentRow] = useState(0);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const hiddenFileInput = useRef(null);
+  const [rowIdProduct, setRowIdProduct] = useState(0);
 
   useEffect(() => {}, [products]);
-  const hiddenFileInput = useRef(null);
-
-  const handleChangeImage = (e) => {
-    const imageUpload = e.target.files[0];
-    const imageUploadUrl = URL.createObjectURL(imageUpload);
-    console.log({ currentRow });
-    setProducts(
-      [...products].map((obj, index) => {
-        if (obj.id_product === currentRow) {
-          obj.images_product = obj.images_product.slice(0, -1);
-          obj.images_product = obj.images_product
-            .concat(',"')
-            .concat(imageUploadUrl)
-            .concat('""');
-          return {
-            ...obj,
-          };
-        } else return obj;
-      })
-    );
-    return products;
-  };
-
-  const deleteImage = (arr, i) => {
-    setProducts(
-      [...products].map((obj, index) => {
-        console.log({ currentRow });
-        if (obj.id_product === currentRow) {
-          let x = "";
-          console.log({ i });
-          arr.splice(index, 1);
-          arr.forEach((e) => {
-            x = x.concat(x).concat('",');
-          });
-          console.log({ x });
-          obj.images_product = x;
-          return {
-            ...obj,
-          };
-        } else return obj;
-      })
-    );
-    return products;
-  };
-
-  const rowEvents = {
-    onClick: (e, row, rowIndex) => {
-      // console.log(1, row);
-      // const a = row.images_product;
-      // const x = a.split('",');
-      // console.log({ x });
-      // setCurrentImageIndex(1);
-      setCurrentRow(row.id_product);
-      // deleteImage();
-    },
-    onChange: (e, row, rowIndex) => {
-      handleChangeImage(e);
-    },
-  };
 
   const addImage = () => {
     hiddenFileInput.current.click();
@@ -104,6 +46,42 @@ function App() {
       });
   };
 
+  const rowEvents = {
+    onClick: (e, row, rowIndex) => {
+      setCurrentRow(row.id_product);
+    },
+    onChange: (e, row, rowIndex) => {
+      handleChangeImage(e);
+    },
+  };
+  const handleChangeImage = (e) => {
+    const imageUpload = e.target.files[0];
+    const imageUploadUrl = URL.createObjectURL(imageUpload);
+    setProducts(
+      products.map((obj, index) => {
+        if (obj.id_product === currentRow) {
+          obj.images_product = obj.images_product.slice(0, -1);
+          obj.images_product = obj.images_product
+            .concat(',"')
+            .concat(imageUploadUrl)
+            .concat('""');
+          return obj;
+        } else return obj;
+      })
+    );
+    return products;
+  };
+
+  const updateDataToDb = () => {
+    EtsyDataService.updateDataToDB(products)
+      .then((response) => {
+        console.log({ response });
+        console.log({ products });
+      })
+      .catch((e) => {
+        console.log(e);
+      });
+  };
   const listTM = [];
   const fileTMSplit = fileTM.split("\n");
   fileTMSplit.forEach((e) => listTM.push(e));
@@ -157,22 +135,25 @@ function App() {
       });
   };
 
-  const transformedProducts = products.map((product) => {
-    let html = product.name;
-    listTM.forEach((e) => {
-      if (html.length > 0) {
-        html = html.replaceAll(
-          e,
-          `<span style="background-color: yellow">${e}</span>`
-        );
-      }
-    });
+  const transformedProducts = () => {
+    products.map((product) => {
+      let html = product.name;
+      listTM.forEach((e) => {
+        if (html.length > 0) {
+          html = html.replaceAll(
+            e,
+            `<span style="background-color: yellow">${e}</span>`
+          );
+        }
+      });
 
-    return {
-      ...product,
-      name: html,
-    };
-  });
+      return {
+        ...product,
+        name: html,
+      };
+    });
+    return products;
+  };
 
   const arrayTemplate = [];
   const nameTemplate = [];
@@ -224,6 +205,25 @@ function App() {
     );
     return setProducts(newProducts);
   };
+
+  const updateDataTable = (e, row, column, newValue) => {
+    const data = products.map((obj, index) => {
+      if (obj.id_product === row.id_product) {
+        if (column.dataField === "name") {
+          obj.name = newValue;
+
+          return obj;
+        } else {
+          obj.tags = newValue;
+          return obj;
+        }
+      } else return obj;
+    });
+    setProducts(data);
+    transformedProducts();
+    return products;
+  };
+
   const columns = [
     {
       dataField: "id_product",
@@ -241,8 +241,31 @@ function App() {
       },
 
       formatter: (cell, cellIndex, row) => {
-        const cell1 = cell.slice(2, -1);
-        console.log({ cell });
+        let cell1 = "";
+        const a = cell.search("{undefin");
+        const b = cell.search("{,");
+        if (a >= 0) {
+          cell = cell.replace("{undefin,", "");
+          cell = cell.replace('""', '"');
+          const x = cell.split(",").length;
+          if (x > 1) {
+            cell1 = cell.slice(1);
+          } else {
+            cell1 = cell.slice(1, -1);
+          }
+        } else if (b >= 0) {
+          cell = cell.replace('{,"', "");
+          if (cell.split(",").length > 1) {
+            cell = cell.slice(0, -1);
+            cell1 = cell;
+          } else {
+            cell = cell.slice(0, -2);
+            cell1 = cell;
+          }
+        } else {
+          cell1 = cell.slice(2, -1);
+        }
+
         const mapObj = {
           "75x75": "fullxfull",
           "340x270": "fullxfull",
@@ -275,26 +298,27 @@ function App() {
               src={imageMainSrc}
               ratio={`1:1`}
               deleteImage={() => {
-                setProducts(
-                  products.map((obj, index) => {
-                    if (obj.id_product === cellIndex.id_product) {
-                      let x = obj.images_product.split(",");
-                      console.log({ x });
-                      x = x.splice(1);
-                      x[0] = "{".concat(x[0]);
-                      x[x.length - 1] = x.slice(0, -1);
-                      console.log({ x });
-                      let a = "";
-                      x.forEach((e) => {
+                const data = products.map((obj, index) => {
+                  if (obj.id_product === cellIndex.id_product) {
+                    let x = obj.images_product.split(",");
+                    x = x.splice(1);
+                    x[0] = "{".concat(x[0]);
+                    let a = "";
+                    x.forEach((e, xi) => {
+                      if (x.length === 1) {
+                        a = e.slice(0, -1);
+                      } else if (xi >= x.length - 1) {
+                        a = a.concat(e);
+                      } else {
                         a = a.concat(e).concat(",");
-                      });
-                      console.log({ a });
-
-                      obj.images_product = a;
-                      return obj;
-                    } else return obj;
-                  })
-                );
+                      }
+                    });
+                    obj.images_product = a;
+                    return obj;
+                  } else return obj;
+                });
+                setProducts(data);
+                transformedProducts(products);
                 return products;
               }}
             />
@@ -307,36 +331,35 @@ function App() {
               src={e}
               ratio={`3:2`}
               deleteImage={() => {
-                setProducts(
-                  products.map((obj, index) => {
-                    if (obj.id_product === cellIndex.id_product) {
-                      let x = "";
-                      console.log({ listImageExtrasSrc });
-                      listImageExtrasSrc.splice(i, 1);
-                      if (i !== newImages.length - 1) {
-                        listImageExtrasSrc[
-                          listImageExtrasSrc.length - 1
-                        ] = listImageExtrasSrc[
-                          listImageExtrasSrc.length - 1
-                        ].slice(0, -1);
+                const data = products.map((obj, index) => {
+                  if (obj.id_product === cellIndex.id_product) {
+                    let x = "";
+                    listImageExtrasSrc.splice(i, 1);
+                    if (i !== newImages.length - 1) {
+                      listImageExtrasSrc[
+                        listImageExtrasSrc.length - 1
+                      ] = listImageExtrasSrc[
+                        listImageExtrasSrc.length - 1
+                      ].slice(0, -1);
+                    }
+                    listImageExtrasSrc.forEach((e, index) => {
+                      if (index < listImageExtrasSrc.length - 1) {
+                        x = x.concat(e).concat('",');
+                      } else {
+                        x = x.concat(e);
                       }
-                      listImageExtrasSrc.forEach((e, index) => {
-                        if (index < listImageExtrasSrc.length - 1) {
-                          x = x.concat(e).concat('",');
-                        } else {
-                          x = x.concat(e);
-                        }
-                      });
-                      const images_product = '{"'
-                        .concat(imageMainSrc)
-                        .concat('",')
-                        .concat(x)
-                        .concat('"}');
-                      obj.images_product = images_product;
-                      return obj;
-                    } else return obj;
-                  })
-                );
+                    });
+                    const images_product = '{"'
+                      .concat(imageMainSrc)
+                      .concat('",')
+                      .concat(x)
+                      .concat('"}');
+                    obj.images_product = images_product;
+                    return obj;
+                  } else return obj;
+                });
+                setProducts(data);
+                transformedProducts();
                 return products;
               }}
             />
@@ -349,6 +372,7 @@ function App() {
               type="file"
               id="imgupload"
               style={{ display: "none" }}
+              onChange={handleChangeImage}
               ref={hiddenFileInput}
             />
             <button
@@ -360,7 +384,6 @@ function App() {
             </button>
           </div>
         );
-
         return [imageMain, listImageExtra, button];
       },
     },
@@ -375,6 +398,7 @@ function App() {
       formatter: function (cell, row) {
         const htmlInput = `<div>${cell}</div>`;
         const htmlToReactParser = new HtmlToReactParser();
+
         return htmlToReactParser.parse(htmlInput);
       },
       editor: {
@@ -387,7 +411,7 @@ function App() {
       headerStyle: (column, colIndex) => {
         return { width: "25%" };
       },
-      formatter: (cell, row) => {
+      formatter: (cell, row, column) => {
         const htmlInput = `<div>${cell}</div>`;
         const htmlToReactParser = new HtmlToReactParser();
         return htmlToReactParser.parse(htmlInput);
@@ -401,7 +425,6 @@ function App() {
       },
     },
   ];
-
   return (
     <div className="App" style={{ margin: "20px" }}>
       <h1 className="text-center mb-5">ETSY Listing God Group</h1>
@@ -442,10 +465,9 @@ function App() {
           </button>
         </div>
       </div>
-
       <ToolkitProvider
-        keyField="id"
-        data={transformedProducts}
+        keyField={"table"}
+        data={transformedProducts()}
         columns={columns}
         search
         exportCSV={{
@@ -471,10 +493,13 @@ function App() {
             <div className="row">
               {arrayTemplate.map((e, index) => {
                 return (
-                  <div className="col-2">
+                  <div className="col-2" key={index}>
                     <button
                       className="btn btn-info btn-block"
-                      onClick={() => csvExporter.generateCsv(e)}
+                      onClick={() => {
+                        csvExporter.generateCsv(e);
+                        updateDataToDb();
+                      }}
                     >
                       {nameTemplate[index]}
                     </button>
@@ -502,6 +527,9 @@ function App() {
               cellEdit={cellEditFactory({
                 mode: "dbclick",
                 blurToSave: true,
+                beforeSaveCell: (oldValue, newValue, row, column) => {
+                  updateDataTable(row, column, newValue);
+                },
               })}
               selectRow={selectRow}
               filter={filterFactory()}
